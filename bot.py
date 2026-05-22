@@ -23,7 +23,7 @@ from telegram.ext import (
 # НАЛАШТУВАННЯ
 # =========================
 
-TOKEN = "8716475707:AAEuSu7KsRmnFQIgv2X92Ix3-E19co0QedY"
+TOKEN = "8716475707:AAE2Nypb2OmVso1As_AcCx_Ku-QnQz_9wp8"
 ADMIN_ID = 496493116
 
 # Шлях до фото контактів
