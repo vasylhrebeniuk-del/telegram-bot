@@ -27,7 +27,7 @@ TOKEN = "8716475707:AAEuSu7KsRmnFQIgv2X92Ix3-E19co0QedY"
 ADMIN_ID = 496493116
 
 # Шлях до фото контактів
-CONTACTS_PHOTO = "banner1(1).jpg"
+CONTACTS_PHOTO = "banner.jpg"
 
 # =========================
 # SQLITE БАЗА ДАНИХ
