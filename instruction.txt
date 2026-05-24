@@ -1,0 +1,30 @@
+Корисні команди на майбутнє
+Перевірити статус бота
+systemctl status telegram-bot
+Перезапустити після змін у коді
+
+(коли щось зміниш у bot.py)
+
+systemctl restart telegram-bot
+Зупинити бота
+systemctl stop telegram-bot
+Подивитись логи бота
+
+дуже корисно, якщо щось зламається:
+
+journalctl -u telegram-bot -f
+Як оновлювати бота після змін
+
+Коли редагуєш код на комп’ютері:
+
+git add .
+git commit -m "update"
+git push
+
+Потім на сервері:
+
+cd ~/telegram-bot
+git pull
+systemctl restart telegram-bot
+
+І бот оновлений.

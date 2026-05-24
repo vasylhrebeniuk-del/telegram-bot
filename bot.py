@@ -199,7 +199,8 @@ async def inline_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "💰 Надішліть, будь ласка:\n\n"
             "• модель товару\n"
-            "• або фото товару\n\n"
+            "• посилання на сторінку з товаром\n"
+            "• фото товару\n\n"
             "Наприклад:\n"
             "Samsung WW60A3120BH/LE",
             reply_markup=back_keyboard
