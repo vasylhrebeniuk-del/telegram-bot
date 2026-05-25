@@ -26,6 +26,7 @@ from telegram.ext import (
 TOKEN = "8716475707:AAE2Nypb2OmVso1As_AcCx_Ku-QnQz_9wp8"
 ADMIN_ID = 496493116
 
+# Шлях до фото контактів
 CONTACTS_PHOTO = "banner.jpg"
 
 # =========================
@@ -44,15 +45,6 @@ CREATE TABLE IF NOT EXISTS requests (
     request_type TEXT,
     message TEXT,
     created_at TEXT
-)
-""")
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    user_id INTEGER PRIMARY KEY,
-    username TEXT,
-    first_name TEXT,
-    started_at TEXT
 )
 """)
 
@@ -111,12 +103,17 @@ def is_working_time():
     weekday = now.weekday()
     current_hour = now.hour
 
+    # ПН-ПТ
     if weekday in [0, 1, 2, 3, 4]:
+
         return 9 <= current_hour < 17
 
+    # СБ
     if weekday == 5:
+
         return 9 <= current_hour < 14
 
+    # НД
     return False
 
 # =========================
@@ -124,25 +121,6 @@ def is_working_time():
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    user = update.message.from_user
-
-    cursor.execute("""
-    INSERT OR IGNORE INTO users (
-        user_id,
-        username,
-        first_name,
-        started_at
-    )
-    VALUES (?, ?, ?, ?)
-    """, (
-        user.id,
-        user.username,
-        user.first_name,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ))
-
-    conn.commit()
 
     await update.message.reply_text(
         "👋 Вітаємо!\n\n"
@@ -161,18 +139,23 @@ async def send_contacts(message):
 
     caption = (
         "🏪 <b>СКЛАД ПОБУТОВОЇ ТЕХНІКИ</b>\n\n"
+
         "📍 <b>Адреса:</b>\n"
         "м. Вінниця,\n"
         "вул. Академіка Янгеля 4\n\n"
+
         "🗺 <b>Google Maps:</b>\n"
         "https://maps.app.goo.gl/XvLQ9c2A4RNrvXMz6\n\n"
+
         "📞 <b>Телефони:</b>\n"
         "• 097-969-33-34\n"
         "• 097-251-49-45\n\n"
+
         "🕒 <b>Графік роботи:</b>\n"
         "• ПН-ПТ: 09:00 - 17:00\n"
         "• СБ: 09:00 - 14:00\n"
         "• НД: вихідний\n\n"
+
         "🤝 Завжди раді Вам допомогти!"
     )
 
@@ -194,7 +177,6 @@ async def send_contacts(message):
             parse_mode="HTML",
             reply_markup=inline_menu
         )
-
 # =========================
 # INLINE КНОПКИ
 # =========================
@@ -205,6 +187,10 @@ async def inline_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     user_id = query.from_user.id
+
+    # =========================
+    # ДІЗНАТИСЬ ЦІНУ
+    # =========================
 
     if query.data == "price":
 
@@ -222,13 +208,17 @@ async def inline_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         return
 
+    # =========================
+    # ДОПОМОГА У ПІДБОРІ
+    # =========================
+
     if query.data == "help":
 
         user_modes[user_id] = "help"
 
         await query.message.reply_text(
-            "🛠 Для підбору, будь ласка, вкажіть який саме товар Вас цікавить (холодильник, телевізор, пральна машина)\n"
-            "• основні характеристики: бажаний колір, розмір\n"
+            "🛠 Для підбору, будь ласка, вкажіть який саме товар Вас цікавить (холодильник, телвізор, пральна машина)\n"
+            "• основні характеристики: бажаний колір, розмір\n"            
             "• орієнтовний бюджет\n"
             "• можете також надіслати фото\n\n"
             "Наприклад:\n"
@@ -237,6 +227,10 @@ async def inline_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         return
+
+    # =========================
+    # КОНТАКТИ
+    # =========================
 
     if query.data == "contacts":
 
@@ -271,11 +265,13 @@ async def user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     print(f"Отримано повідомлення: {text}")
 
+    # Ігноруємо повідомлення адміна
     if user_id == ADMIN_ID:
         return
 
     mode = user_modes.get(user_id)
 
+    # Якщо режим не вибраний
     if not mode:
 
         await update.message.reply_text(
@@ -285,11 +281,16 @@ async def user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         return
 
+    # Тип заявки
     mode_text = (
         "Запит ціни"
         if mode == "price"
         else "Допомога у підборі"
     )
+
+    # =========================
+    # ЗБЕРЕЖЕННЯ В БАЗУ
+    # =========================
 
     cursor.execute("""
     INSERT INTO requests (
@@ -312,11 +313,16 @@ async def user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     conn.commit()
 
+    # =========================
+    # ВІДПРАВКА АДМІНУ
+    # =========================
+
     admin_message = (
         f"📩 Нова заявка\n\n"
         f"Тип: {mode_text}\n"
         f"Ім'я: {user.first_name}\n"
-        f"Username: @{user.username if user.username else 'немає'}\n"
+        f"Username: "
+        f"@{user.username if user.username else 'немає'}\n"
         f"ID: {user_id}\n\n"
         f"Повідомлення:\n{text}"
     )
@@ -326,7 +332,12 @@ async def user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=admin_message
     )
 
+    # Запам'ятовуємо користувача
     context.bot_data[msg.message_id] = user_id
+
+    # =========================
+    # АВТОВІДПОВІДЬ
+    # =========================
 
     if is_working_time():
 
@@ -343,7 +354,8 @@ async def user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• ПН-ПТ: 09:00 - 17:00\n"
             "• СБ: 09:00 - 14:00\n"
             "• НД: вихідний\n\n"
-            "Ми обов'язково відповімо Вам у робочий час 🙌"
+            "Ми обов'язково відповімо Вам "
+            "у робочий час 🙌"
         )
 
     await update.message.reply_text(
@@ -351,6 +363,7 @@ async def user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=inline_menu
     )
 
+    # Очищаємо режим
     user_modes.pop(user_id, None)
 
 # =========================
@@ -363,11 +376,13 @@ async def photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     caption = update.message.caption
     user_id = user.id
 
+    # Ігноруємо фото адміна
     if user_id == ADMIN_ID:
         return
 
     mode = user_modes.get(user_id)
 
+    # Якщо режим не вибраний
     if not mode:
 
         await update.message.reply_text(
@@ -377,13 +392,19 @@ async def photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         return
 
+    # Тип заявки
     mode_text = (
         "Запит ціни"
         if mode == "price"
         else "Допомога у підборі"
     )
 
+    # Текст для бази
     message_text = caption if caption else "Фото без опису"
+
+    # =========================
+    # ЗБЕРЕЖЕННЯ В БАЗУ
+    # =========================
 
     cursor.execute("""
     INSERT INTO requests (
@@ -406,15 +427,21 @@ async def photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     conn.commit()
 
+    # =========================
+    # ВІДПРАВКА ФОТО АДМІНУ
+    # =========================
+
     photo = update.message.photo[-1].file_id
 
     admin_caption = (
         f"📷 Нова заявка з фото\n\n"
         f"Тип: {mode_text}\n"
         f"Ім'я: {user.first_name}\n"
-        f"Username: @{user.username if user.username else 'немає'}\n"
+        f"Username: "
+        f"@{user.username if user.username else 'немає'}\n"
         f"ID: {user_id}\n\n"
-        f"Коментар:\n{message_text}"
+        f"Коментар:\n"
+        f"{message_text}"
     )
 
     msg = await context.bot.send_photo(
@@ -423,7 +450,12 @@ async def photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         caption=admin_caption
     )
 
+    # Запам'ятовуємо користувача
     context.bot_data[msg.message_id] = user_id
+
+    # =========================
+    # АВТОВІДПОВІДЬ
+    # =========================
 
     if is_working_time():
 
@@ -440,7 +472,8 @@ async def photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• ПН-ПТ: 09:00 - 17:00\n"
             "• СБ: 09:00 - 14:00\n"
             "• НД: вихідний\n\n"
-            "Ми обов'язково відповімо Вам у робочий час 🙌"
+            "Ми обов'язково відповімо Вам "
+            "у робочий час 🙌"
         )
 
     await update.message.reply_text(
@@ -448,6 +481,7 @@ async def photo_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=inline_menu
     )
 
+    # Очищаємо режим
     user_modes.pop(user_id, None)
 
 # =========================
@@ -458,19 +492,23 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.message.from_user.id
 
+    # Лише адміну
     if user_id != ADMIN_ID:
         return
 
+    # Має бути reply
     if not update.message.reply_to_message:
         return
 
     replied_msg_id = update.message.reply_to_message.message_id
 
+    # Отримуємо користувача
     target_user_id = context.bot_data.get(replied_msg_id)
 
     if not target_user_id:
         return
 
+    # Відправляємо відповідь
     await context.bot.send_message(
         chat_id=target_user_id,
         text=(
@@ -484,58 +522,22 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # =========================
-# /stats
-# =========================
-
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    if update.message.from_user.id != ADMIN_ID:
-        return
-
-    cursor.execute("SELECT COUNT(*) FROM users")
-    total_users = cursor.fetchone()[0]
-
-    cursor.execute("SELECT COUNT(*) FROM requests")
-    total_requests = cursor.fetchone()[0]
-
-    cursor.execute("""
-    SELECT COUNT(*) FROM requests
-    WHERE request_type='Запит ціни'
-    """)
-    price_requests = cursor.fetchone()[0]
-
-    cursor.execute("""
-    SELECT COUNT(*) FROM requests
-    WHERE request_type='Допомога у підборі'
-    """)
-    help_requests = cursor.fetchone()[0]
-
-    await update.message.reply_text(
-        "📊 Статистика бота\n\n"
-        f"👥 Унікальних користувачів: {total_users}\n"
-        f"📩 Усього заявок: {total_requests}\n\n"
-        f"💰 Запит ціни: {price_requests}\n"
-        f"🛠 Допомога у підборі: {help_requests}"
-    )
-
-# =========================
 # ЗАПУСК БОТА
 # =========================
 
 app = ApplicationBuilder().token(TOKEN).build()
 
+# /start
 app.add_handler(
     CommandHandler("start", start)
 )
 
-app.add_handler(
-    CommandHandler("stats", stats)
-)
-
+# Inline-кнопки
 app.add_handler(
     CallbackQueryHandler(inline_buttons)
 )
 
+# Кнопка "Назад"
 app.add_handler(
     MessageHandler(
         filters.Regex("^⬅️ Назад$"),
@@ -543,6 +545,7 @@ app.add_handler(
     )
 )
 
+# Reply адміна
 app.add_handler(
     MessageHandler(
         filters.REPLY & filters.TEXT,
@@ -550,6 +553,7 @@ app.add_handler(
     )
 )
 
+# Фото
 app.add_handler(
     MessageHandler(
         filters.PHOTO,
@@ -557,6 +561,7 @@ app.add_handler(
     )
 )
 
+# Текст
 app.add_handler(
     MessageHandler(
         filters.TEXT & ~filters.COMMAND,
