@@ -23,7 +23,7 @@ from telegram.ext import (
 # НАЛАШТУВАННЯ
 # =========================
 
-TOKEN = "8716475707:AAE2Nypb2OmVso1As_AcCx_Ku-QnQz_9wp8"
+TOKEN = "8716475707:AAHbrbRaLCOoof8Wau3iOGdGvstgZhn8Iu8"
 ADMIN_ID = 496493116
 
 CONTACTS_PHOTO = "banner.jpg"
